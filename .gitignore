@@ -1,0 +1,13 @@
+# Intellij IDEA
+.IDEA/
+*.iml
+
+# Mac custom folder attributes
+.DS_Store
+
+# pip install
+biobesu.egg-info/
+
+# Python
+*.pyc
+__pychache__/
