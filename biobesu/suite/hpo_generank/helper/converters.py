@@ -53,7 +53,7 @@ def convert_benchmarkdata_linesplit_to_phenopackets(line, phenotype_dict):
 
     # Add metadata.
     output_string += '\n\t"meta_data": {' \
-                     '\n\t\t"created": "' + str(datetime.now()) + '",' + \
+                     '\n\t\t"created": "' + datetime.utcnow().isoformat() + 'Z",' + \
                      '\n\t\t"created_by": "biobesu",' \
                      '\n\t\t"resources": [{' \
                      '\n\t\t\t"id": "hp",' \
