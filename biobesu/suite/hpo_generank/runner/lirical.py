@@ -1,9 +1,13 @@
 #!/user/bin/env python3
 
+from os import mkdir
+from os.path import isdir
 from biobesu.helper import validate
+from biobesu.suite.hpo_generank.helper.converters import write_benchmarkdata_to_phenopackets
 
 def main(parser):
     args = __parse_command_line(parser)
+    __generate_phenopacket_files(args)
 
 
 def __parse_command_line(parser):
@@ -19,3 +23,15 @@ def __parse_command_line(parser):
     args.output = validate.directory(parser, args.output)
 
     return args
+
+
+def __generate_phenopacket_files(args):
+    phenopackets_dir = args.output + "/phenopackets/"
+
+    # Skips creating phenopackets if dir already exists.
+    if isdir(phenopackets_dir):
+        print("Phenopackets subdirectory found, skipping conversion of benchmark data.")
+        return
+
+    mkdir(phenopackets_dir)
+    write_benchmarkdata_to_phenopackets(args.input, phenopackets_dir, args.hpo)

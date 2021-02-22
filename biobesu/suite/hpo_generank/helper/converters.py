@@ -1,9 +1,12 @@
 #!/user/bin/env python3
 
 from datetime import datetime
+from biobesu.helper.reader import read_hpo_obo
 
 
-def write_benchmarkdata_to_phenopackets(input_file, output_dir):
+def write_benchmarkdata_to_phenopackets(input_file, output_dir, hpo_obo_file):
+    phenotype_dict = read_hpo_obo(hpo_obo_file)
+
     # Digests the benchmark cases.
     for i, line in enumerate(open(input_file)):
         # Skips first line (header).
@@ -14,7 +17,7 @@ def write_benchmarkdata_to_phenopackets(input_file, output_dir):
         line = line.rstrip().split('\t')
 
         # Retrieve converted data.
-        output_string = convert_benchmarkdata_linesplit_to_phenopackets(line)
+        output_string = convert_benchmarkdata_linesplit_to_phenopackets(line, phenotype_dict)
 
         # Write output.
         file_writer = open(output_dir + line[0] + '.json', 'w')
