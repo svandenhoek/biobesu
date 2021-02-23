@@ -40,7 +40,7 @@ def test_benchmark_linesplit_to_phenopacket():
 
     actual_output = convert_benchmarkdata_linesplit_to_phenopackets(input_string, phenotypes_dict)
     # Removes creation date for easier validation.
-    # Date format: 2021-02-22 13:49:00.795222
-    actual_output = sub(r'\t\t"created": "[0-9\- :.]+",\n', '', actual_output)
+    # Date format: 2021-02-23T12:18:38.092615Z
+    actual_output = sub(r'\t\t"created": "[TZ0-9\- :.]+",\n', '', actual_output)
 
     assert actual_output == expected_output
