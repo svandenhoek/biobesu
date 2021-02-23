@@ -2,27 +2,32 @@
 
 A suite for testing bioinformatics tools.
 
-## Installation
-### How-to
+## How-to
+### Install
 ```bash
 git clone git@github.com:molgenis/biobesu.git
 cd biobesu
 pip install .
 ```
 
-## Structure
-
+### Use
 ```
-helper/ # General helper scripts
-    |- <name>.py
+# General format
+biobesu <suite> <runner> --<runner_argument> [--<runner_optional_argument>]
 
-suite/ # Benchmark suites
-    |- <suitename>
-        |- cli.py # Entry point for suite
-        |- helper/ # Suite helper scripts
-            |- <name>.py
-        |- runner/ # Scripts runnable through suite entry point
-            |- <name>.py
+# Get available suites
+biobesu
+
+# Get runners for selected suite
+biobesu <suite>
+```
+
+Examples:
+```
+biobesu hpo_generank lirical --jar /path/to/LIRICAL.jar \
+--hpo /path/to/hp.obo --input /path/to/benchmark_data.tsv \
+--output /path/to/dir/output --lirical_data /path/to/dir/lirical/data \
+--lirical_exomiser /path/to/dir/2102_hg19
 ```
 
 ## Developers (work-in-progress)
@@ -41,3 +46,18 @@ pytest test/
 3. Open the project folder in Intellij IDEA.
 4. Go to "File -> Project Structure -> SDKs" and select/create a Python virtual environment.
 5. Open `setup.py` and install any missing packages.
+
+### Structure
+
+```
+helper/ # General helper scripts
+    |- <name>.py
+
+suite/ # Benchmark suites
+    |- <suitename>
+        |- cli.py # Entry point for suite
+        |- helper/ # Suite helper scripts
+            |- <name>.py
+        |- runner/ # Scripts runnable through suite entry point
+            |- <name>.py
+```
