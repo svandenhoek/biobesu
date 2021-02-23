@@ -70,21 +70,21 @@ def __run_lirical(args, phenopackets_dir):
 
 def __digest_lirical_output(args, lirical_output_dir):
     lirical_extraction_file = args.output + "lirical_output_extraction.tsv"
-    file_writer = open(lirical_extraction_file, 'x')  # Requires creating a new file.
-    file_writer.write("id\tgene_aliases")
+    with open(lirical_extraction_file, 'x') as file_writer:  # Requires creating a new file.
+        # Writer header.
+        file_writer.write("id\tgene_aliases")
 
-    for file in listdir(lirical_output_dir):
-        file_id = file.strip(".tsv").split('/')[-1]
+        # Process input files.
+        for file in listdir(lirical_output_dir):
+            file_id = file.strip(".tsv").split('/')[-1]
 
-        # Write id column.
-        file_writer.write("\n" + file_id + "\t")
+            # Write id column.
+            file_writer.write("\n" + file_id + "\t")
 
-        # Create/write genes column.
-        genes = __extract_genes_from_lirical_data(open(lirical_output_dir + file))
-        file_writer.write(','.join(genes))
-
-    file_writer.flush()
-    file_writer.close()
+            # Create/write genes column.
+            with open(lirical_output_dir + file) as input_file:
+                genes = __extract_genes_from_lirical_data(input_file)
+                file_writer.write(','.join(genes))
 
     return lirical_extraction_file
 
@@ -119,24 +119,24 @@ def __digest_lirical_gene_aliases_file(args, lirical_gene_aliases):
 
     # Prepare output file.
     lirical_output_gene_symbols = args.output + "lirical_output_gene_symbols.tsv"
-    file_writer = open(lirical_output_gene_symbols, 'x')  # Requires creating a new file.
-    file_writer.write("id\tgene_symbols\n")
 
-    # Process input file.
-    for i, line in enumerate(open(lirical_gene_aliases)):
-        # Skip header.
-        if i == 0:
-            continue
+    with open(lirical_output_gene_symbols, 'x') as file_writer:  # Requires creating a new file.
+        # Write header.
+        file_writer.write("id\tgene_symbols\n")
 
-        # Process line.
-        line = line.split('\t')
-        converted_genes, missing = convert_gene_aliases_to_symbol(alias_conversion_dict, line[1].split(','))
+        # Process input file.
+        with open(lirical_gene_aliases) as file_reader:
+            for i, line in enumerate(file_reader):
+                # Skip header.
+                if i == 0:
+                    continue
 
-        # Digest results.
-        file_writer.write(line[0] + '\t' + ','.join(converted_genes) + '\n')
-        all_missing.update(missing)
+                # Process line.
+                line = line.split('\t')
+                converted_genes, missing = convert_gene_aliases_to_symbol(alias_conversion_dict, line[1].split(','))
 
-    file_writer.flush()
-    file_writer.close()
+                # Digest results.
+                file_writer.write(line[0] + '\t' + ','.join(converted_genes) + '\n')
+                all_missing.update(missing)
 
     return lirical_output_gene_symbols, missing
