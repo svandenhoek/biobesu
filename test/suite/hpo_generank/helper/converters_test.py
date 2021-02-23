@@ -1,6 +1,5 @@
 #!/user/bin/env python3
 
-import pytest
 from re import sub
 from biobesu.suite.hpo_generank.helper.converters import convert_benchmarkdata_linesplit_to_phenopackets
 
