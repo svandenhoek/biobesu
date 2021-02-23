@@ -1,19 +1,21 @@
 #!/user/bin/env python3
 
 from argparse import ArgumentParser
+from argparse import RawTextHelpFormatter
 from biobesu.helper.generic import retrieve_entry_point
+from biobesu.helper.argument_parser import BiobesuParser
 
 
 def main():
+    # Load available suites.
+    suites = retrieve_entry_point('biobesu_suites')
+
     # Defines global command line.
-    parser = ArgumentParser()
-    parser.add_argument("suite", help="the type of job to execute")
+    parser = BiobesuParser(formatter_class=RawTextHelpFormatter, add_help=False)
+    parser.add_argument("suite", help="the chosen benchmark suite:\n" + '\n'.join(suites))
 
     # Processes command line.
     args, unknown_args = parser.parse_known_args()
-
-    # Load available suites.
-    suites = retrieve_entry_point('biobesu_suites')
 
     # Run selected suite.
     suites[args.suite](parser)
