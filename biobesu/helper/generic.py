@@ -33,6 +33,7 @@ def retrieve_entry_point(name):
 
     return collection
 
+
 def create_dir(dir_path, exist_allowed=False):
     makedirs(dir_path, exist_ok=exist_allowed)
     return dir_path
