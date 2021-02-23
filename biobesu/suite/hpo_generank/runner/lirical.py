@@ -25,7 +25,6 @@ def __parse_command_line(parser):
     parser.add_argument("--output", required=True, help="directory to write output to")
 
     parser.add_argument("--lirical_data", help="directory to write output to")
-    parser.add_argument("--lirical_exomiser", help="directory to write output to")
 
     # Processes command line.
     try:
@@ -41,8 +40,6 @@ def __parse_command_line(parser):
             validate.file(args.lirical_data + "hp.obo")
             validate.file(args.lirical_data + "mim2gene_medgen")
             validate.file(args.lirical_data + "phenotype.hpoa")
-        if args.lirical_exomiser is not None:
-            validate.directory(args.lirical_exomiser)
     except OSError as e:
         parser.error(e)
 
@@ -62,8 +59,6 @@ def __run_lirical(args, phenopackets_dir):
     optional_arguments = ""
     if args.lirical_data is not None:
         optional_arguments += " -d " + args.lirical_data
-    if args.lirical_exomiser is not None:
-        optional_arguments += " -e " + args.lirical_exomiser
 
     # Run tool for each input file.
     for file in listdir(phenopackets_dir):
