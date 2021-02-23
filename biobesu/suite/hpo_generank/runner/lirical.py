@@ -1,9 +1,9 @@
 #!/user/bin/env python3
 
-from os import makedirs
 from subprocess import call
 from os import listdir
 from biobesu.helper import validate
+from biobesu.helper.generic import create_dir
 from biobesu.suite.hpo_generank.helper.converters import write_benchmarkdata_to_phenopackets
 
 def main(parser):
@@ -48,16 +48,13 @@ def __parse_command_line(parser):
 
 
 def __generate_phenopacket_files(args):
-    phenopackets_dir = args.output + "phenopackets/"
-    makedirs(phenopackets_dir, exist_ok=False)
+    phenopackets_dir = create_dir(args.output + "phenopackets/")
     write_benchmarkdata_to_phenopackets(args.input, phenopackets_dir, args.hpo)
     return phenopackets_dir
 
 
 def __run_lirical(args, phenopackets_dir):
-    # Prepares output directory.
-    lirical_output_dir = args.output + "lirical_output/"
-    makedirs(lirical_output_dir, exist_ok=False)
+    lirical_output_dir = create_dir(args.output + "lirical_output/")
 
     # Digests optional arguments.
     optional_arguments = ""

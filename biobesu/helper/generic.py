@@ -1,6 +1,7 @@
 #!/user/bin/env python3
 
 from time import sleep
+from os import makedirs
 import pkg_resources
 
 
@@ -31,3 +32,7 @@ def retrieve_entry_point(name):
         collection[entry_point.name] = entry_point.load()
 
     return collection
+
+def create_dir(dir_path, exist_allowed=False):
+    makedirs(dir_path, exist_ok=exist_allowed)
+    return dir_path
