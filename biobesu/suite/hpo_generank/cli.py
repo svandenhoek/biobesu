@@ -10,8 +10,8 @@ def main(parser):
     # Processes command line.
     args, unknown_args = parser.parse_known_args()
 
-    # Load available suites.
+    # Load available runners.
     runners = retrieve_entry_point('biobesu_hpo_generank')
 
-    # Run selected suite.
+    # Run selected runner.
     runners[args.runner](parser)
