@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from biobesu.helper.reader import read_hpo_obo
+import gzip
 
 
 def write_benchmarkdata_to_phenopackets(input_file, output_dir, hpo_obo_file):
@@ -69,3 +70,33 @@ def convert_benchmarkdata_linesplit_to_phenopackets(line, phenotype_dict):
     output_string += '\n}'
 
     return output_string
+
+
+def retrieve_gene_aliases_dict(file_path):
+    alias_conversion_dict = {}
+    with gzip.open(file_path, 'rt') as file:
+        for line in file:
+            line = line.split('\t')
+            gene_symbol = line[2]
+            aliases = line[4]
+            aliases = aliases.split('|')
+
+            for alias in aliases:
+                alias_conversion_dict[alias] = gene_symbol
+
+    return alias_conversion_dict
+
+
+def convert_gene_aliases_to_symbol(alias_conversion_dict, aliases, include_na=True):
+    symbol_list = []
+    missing = set()
+
+    for alias in aliases:
+        try:
+            symbol_list.append(alias_conversion_dict[alias])
+        except KeyError:
+            if include_na:
+                symbol_list.append('NA')
+            missing.add(alias)
+
+    return symbol_list, missing
