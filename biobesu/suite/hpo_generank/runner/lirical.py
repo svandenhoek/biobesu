@@ -69,8 +69,8 @@ def __run_lirical(args, phenopackets_dir):
     # Run tool for each input file.
     for file in listdir(phenopackets_dir):
         file_path = phenopackets_dir + file
-        run_output_dir = lirical_output_dir + file.strip(".json").split('/')[-1]
-        call("java -jar " + args.jar + " phenopacket -p " + file_path + " -o " + run_output_dir + " --tsv" +
-             optional_arguments, shell=True)
+        file_id = file.strip(".json").split('/')[-1]
+        call("java -jar " + args.jar + " phenopacket -p " + file_path + " -o " + lirical_output_dir + " -x " + file_id +
+             " --tsv" + optional_arguments, shell=True)
 
     return lirical_output_dir
