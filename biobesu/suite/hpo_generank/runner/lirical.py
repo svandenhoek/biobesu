@@ -23,8 +23,7 @@ def __parse_command_line(parser):
     parser.add_argument("--hpo", required=True, help="hpo.obo file")
     parser.add_argument("--input", required=True, help="input tsv benchmark file")
     parser.add_argument("--output", required=True, help="directory to write output to")
-
-    parser.add_argument("--lirical_data", help="directory to write output to")
+    parser.add_argument("--lirical_data", required=True, help="directory to write output to")
 
     # Processes command line.
     try:
@@ -34,12 +33,11 @@ def __parse_command_line(parser):
         validate.file(args.jar, ".jar")
         args.output = validate.directory(args.output)
 
-        if args.lirical_data is not None:
-            args.lirical_data = validate.directory(args.lirical_data)
-            validate.file(args.lirical_data + "Homo_sapiens_gene_info.gz")
-            validate.file(args.lirical_data + "hp.obo")
-            validate.file(args.lirical_data + "mim2gene_medgen")
-            validate.file(args.lirical_data + "phenotype.hpoa")
+        args.lirical_data = validate.directory(args.lirical_data)
+        validate.file(args.lirical_data + "Homo_sapiens_gene_info.gz")
+        validate.file(args.lirical_data + "hp.obo")
+        validate.file(args.lirical_data + "mim2gene_medgen")
+        validate.file(args.lirical_data + "phenotype.hpoa")
     except OSError as e:
         parser.error(e)
 
@@ -55,17 +53,12 @@ def __generate_phenopacket_files(args):
 def __run_lirical(args, phenopackets_dir):
     lirical_output_dir = create_dir(args.output + "lirical_output/")
 
-    # Digests optional arguments.
-    optional_arguments = ""
-    if args.lirical_data is not None:
-        optional_arguments += " -d " + args.lirical_data
-
     # Run tool for each input file.
     for file in listdir(phenopackets_dir):
         file_path = phenopackets_dir + file
         file_id = file.strip(".json").split('/')[-1]
         call("java -jar " + args.jar + " phenopacket -p " + file_path + " -o " + lirical_output_dir + " -x " + file_id +
-             " --tsv" + optional_arguments, shell=True)
+             " -d " + args.lirical_data + " --tsv", shell=True)
 
     return lirical_output_dir
 
