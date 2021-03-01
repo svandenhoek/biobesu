@@ -1,5 +1,6 @@
 #!/user/bin/env python3
 
+from datetime import datetime
 from biobesu.helper import validate
 import requests
 
@@ -25,6 +26,106 @@ class Converter:
                 return conversion_dict[keys]
             except KeyError:
                 return None
+
+
+class PhenotypeConverter(Converter):
+    def __init__(self, hpo_obo):
+        # Defines dictionaries for fast retrieval.
+        self.names_by_id = {}
+        self.id_by_names = {}
+
+        # Stores hpo obo relevant information.
+        self.hpo_obo_version = ""
+
+        # Processes hpo obo file.
+        self.read_hpo_obo(hpo_obo)
+
+    def read_hpo_obo(self, hpo_obo):
+        # Match terms for header.
+        match_version = 'data-version:'
+
+        # Match terms for phenotypes.
+        match_term = '[Term]'
+        match_id = 'id: '
+        match_name = 'name: '
+
+        # Initializes variables.
+        hpo_id = None
+        hpo_name = None
+        added = False
+
+        # Goes through the .obo file.
+        with open(hpo_obo) as file:
+            for line in file:
+                if line.startswith(match_version):
+                    self.hpo_obo_version = line.split('/')[1].rstrip()
+                # Resets id and name for new phenotype.
+                if line.startswith(match_term):
+                    hpo_id = None
+                    hpo_name = None
+                    added = False
+                # Once a phenotype is added, skips lines until next term.
+                elif added is True:
+                    continue
+                # Sets id/name when found.
+                elif line.startswith(match_id):
+                    hpo_id = line.lstrip(match_id).strip()
+                elif line.startswith(match_name):
+                    hpo_name = line.lstrip(match_name).strip()
+
+                # If a combination of an id and a name/synonym is stored, saves it to the dictionaries.
+                # Afterwards, reset id to None so that next lines will be ignored till the next phenotype.
+                if hpo_id is not None and hpo_name is not None:
+                    self.names_by_id[hpo_id] = hpo_name
+                    self.id_by_names[hpo_name] = hpo_id
+                    added = True
+
+    def id_to_name(self, hpo_ids, include_na=False):
+        return self.key_to_value(hpo_ids, self.names_by_id, include_na)
+
+    def name_to_id(self, hpo_names, include_na=False):
+        return self.key_to_value(hpo_names, self.id_by_names, include_na)
+
+    def id_to_phenopacket(self, phenopacket_id, phenotype_ids):
+        # Writes opening bracket.
+        output_string = '{'
+
+        # Convert row id to phenopackets.
+        output_string += '\n\t"id": "' + phenopacket_id + '",' + \
+                         '\n\t"phenotypic_features": ['
+
+        # Converts phenotypes phenopackets.
+        for i, phenotype_id in enumerate(phenotype_ids):
+            output_string += '{' \
+                             '\n\t\t"type": {' \
+                             '\n\t\t\t"id": "' + phenotype_id + '",' + \
+                             '\n\t\t\t"label": "' + self.names_by_id[phenotype_id] + '"' + \
+                             '\n\t\t}' \
+                             '\n\t}'
+            if i < len(phenotype_ids)-1:
+                output_string += ', '
+
+        # Closing bracket for phenotypicFeatures.
+        output_string += '],'
+
+        # Add metadata.
+        output_string += '\n\t"meta_data": {' \
+                         '\n\t\t"created": "' + datetime.utcnow().isoformat() + 'Z",' + \
+                         '\n\t\t"created_by": "biobesu",' \
+                         '\n\t\t"resources": [{' \
+                         '\n\t\t\t"id": "hp",' \
+                         '\n\t\t\t"name": "Human Phenotype Ontology",' \
+                         '\n\t\t\t"namespacePrefix": "HP",' \
+                         '\n\t\t\t"url": "http://purl.obolibrary.org/obo/hp.owl",' \
+                         '\n\t\t\t"version": "' + self.hpo_obo_version + '",' \
+                         '\n\t\t\t"iriPrefix": "http://purl.obolibrary.org/obo/HP_"' \
+                         '\n\t\t}]' \
+                         '\n\t}'
+
+        # Writes closing bracket.
+        output_string += '\n}'
+
+        return output_string
 
 
 class GeneConverter(Converter):

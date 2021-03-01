@@ -5,10 +5,10 @@ from os import listdir
 from re import search
 from biobesu.helper import validate
 from biobesu.helper.generic import create_dir
-from biobesu.suite.hpo_generank.helper.converters import write_benchmarkdata_to_phenopackets
 from biobesu.suite.hpo_generank.helper.converters import LiricalGeneAliasConverter
 from biobesu.suite.hpo_generank.helper.converters import LiricalOmimConverter
 from biobesu.helper.converters import GeneConverter
+from biobesu.helper.converters import PhenotypeConverter
 
 
 def main(parser):
@@ -52,7 +52,26 @@ def __parse_command_line(parser):
 
 def __generate_phenopacket_files(args):
     phenopackets_dir = create_dir(args.output + "phenopackets/")
-    write_benchmarkdata_to_phenopackets(args.input, phenopackets_dir, args.hpo)
+    converter = PhenotypeConverter(args.hpo)
+
+    # Digests the benchmark cases.
+    for i, line in enumerate(open(args.input)):
+        # Skips first line (header).
+        if i == 0:
+            continue
+
+        # Splits the columns.
+        line = line.rstrip().split('\t')
+
+        # Retrieve converted data.
+        output_string = converter.id_to_phenopacket(line[0], line[2].split(','))
+
+        # Write output.
+        file_writer = open(phenopackets_dir + line[0] + '.json', 'w')
+        file_writer.write(output_string)
+        file_writer.flush()
+        file_writer.close()
+
     return phenopackets_dir
 
 
@@ -62,7 +81,7 @@ def __run_lirical(args, phenopackets_dir):
     # Run tool for each input file.
     for file in listdir(phenopackets_dir):
         file_path = phenopackets_dir + file
-        file_id = file.strip(".json").split('/')[-1]
+        file_id = file.rstrip(".json").split('/')[-1]
         call("java -jar " + args.jar + " phenopacket -p " + file_path + " -o " + lirical_output_dir + " -x " + file_id +
              " -d " + args.lirical_data + " --tsv", shell=True)
 
@@ -85,7 +104,7 @@ def __extract_from_lirical_output(args, lirical_output_dir):
             # Process input files.
             for file in listdir(lirical_output_dir):
                 # Generate ID column.
-                id_column = "\n{}\t".format(file.strip(".tsv").split('/')[-1])
+                id_column = "\n{}\t".format(file.rstrip(".tsv").split('/')[-1])
                 alias_writer.write(id_column)
                 omim_writer.write(id_column)
 
@@ -162,7 +181,7 @@ def __convert_lirical_output_digest(args, convert_method, input_file, output_fil
                     continue
 
                 # Process line.
-                line = line.strip().split('\t')
+                line = line.rstrip().split('\t')
                 converted, missing = convert_method(line[1].split(','), include_na=True)
 
                 # Digest results.
