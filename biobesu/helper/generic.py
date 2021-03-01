@@ -2,6 +2,7 @@
 
 from time import sleep
 from os import makedirs
+from sys import stderr
 import pkg_resources
 
 
@@ -37,3 +38,13 @@ def retrieve_entry_point(name):
 def create_dir(dir_path, exist_allowed=False):
     makedirs(dir_path, exist_ok=exist_allowed)
     return dir_path
+
+
+def eprint(*args, **kwargs):
+    """
+    Error printing function.
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    print(*args, file=stderr, **kwargs)
