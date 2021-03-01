@@ -14,9 +14,8 @@ from biobesu.helper.converters import GeneConverter
 def main(parser):
     args = __parse_command_line(parser)
     try:
-        #phenopackets_dir = __generate_phenopacket_files(args)
-        #lirical_output_dir = __run_lirical(args, phenopackets_dir)
-        lirical_output_dir = args.output + "lirical_output/"
+        phenopackets_dir = __generate_phenopacket_files(args)
+        lirical_output_dir = __run_lirical(args, phenopackets_dir)
         lirical_gene_alias_file, lirical_omims_file = __extract_from_lirical_output(args, lirical_output_dir)
         __convert_lirical_extractions(args, lirical_gene_alias_file, lirical_omims_file)
     except FileExistsError as e:
