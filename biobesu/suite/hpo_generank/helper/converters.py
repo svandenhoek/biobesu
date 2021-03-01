@@ -1,7 +1,7 @@
 #!/user/bin/env python3
 
 from datetime import datetime
-from biobesu.helper.reader import read_hpo_obo
+from biobesu.helper.hpo_converter import read_hpo_obo
 import gzip
 
 
