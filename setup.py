@@ -20,6 +20,7 @@ setup(
     # download_url = '',
     python_requires='>=3.3',
     install_requires=[
+        'requests'
     ],
     extras_require={
         'test': [

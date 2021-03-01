@@ -6,18 +6,19 @@ from re import search
 from biobesu.helper import validate
 from biobesu.helper.generic import create_dir
 from biobesu.suite.hpo_generank.helper.converters import write_benchmarkdata_to_phenopackets
-from biobesu.suite.hpo_generank.helper.converters import retrieve_gene_aliases_dict
-from biobesu.suite.hpo_generank.helper.converters import convert_gene_aliases_to_symbol
+from biobesu.suite.hpo_generank.helper.converters import LiricalGeneAliasConverter
+from biobesu.suite.hpo_generank.helper.converters import LiricalOmimConverter
+from biobesu.helper.converters import GeneConverter
 
 
 def main(parser):
     args = __parse_command_line(parser)
     try:
-        phenopackets_dir = __generate_phenopacket_files(args)
-        lirical_output_dir = __run_lirical(args, phenopackets_dir)
-        lirical_gene_aliases = __digest_lirical_output(args, lirical_output_dir)
-        lirical_output_gene_symbols, missing = __digest_lirical_gene_aliases_file(args, lirical_gene_aliases)
-        print("Aliases without a symbol: " + ','.join(missing))
+        #phenopackets_dir = __generate_phenopacket_files(args)
+        #lirical_output_dir = __run_lirical(args, phenopackets_dir)
+        lirical_output_dir = args.output + "lirical_output/"
+        lirical_gene_alias_file, lirical_omims_file = __extract_from_lirical_output(args, lirical_output_dir)
+        __convert_lirical_extractions(args, lirical_gene_alias_file, lirical_omims_file)
     except FileExistsError as e:
         print("\nAn output file/directory already exists: " + e.filename + "\nExiting...")
 
@@ -28,7 +29,8 @@ def __parse_command_line(parser):
     parser.add_argument("--hpo", required=True, help="hpo.obo file")
     parser.add_argument("--input", required=True, help="input tsv benchmark file")
     parser.add_argument("--output", required=True, help="directory to write output to")
-    parser.add_argument("--lirical_data", required=True, help="directory to write output to")
+    parser.add_argument("--lirical_data", required=True, help="directory containing data needed by lirical")
+    parser.add_argument("--runner_data", required=True, help="directory that can used to store needed data")
 
     # Processes command line.
     try:
@@ -68,29 +70,38 @@ def __run_lirical(args, phenopackets_dir):
     return lirical_output_dir
 
 
-def __digest_lirical_output(args, lirical_output_dir):
-    lirical_extraction_file = args.output + "lirical_output_extraction.tsv"
-    with open(lirical_extraction_file, 'x') as file_writer:  # Requires creating a new file.
-        # Writer header.
-        file_writer.write("id\tgene_aliases")
+def __extract_from_lirical_output(args, lirical_output_dir):
+    extract_dir = create_dir(args.output + "lirical_extraction/")
+    lirical_gene_alias_file = extract_dir + "lirical_gene_alias.tsv"
+    lirical_omims_file = extract_dir + "lirical_omim.tsv"
 
-        # Process input files.
-        for file in listdir(lirical_output_dir):
-            file_id = file.strip(".tsv").split('/')[-1]
+    # Gene alias file writer.
+    with open(lirical_gene_alias_file, 'x') as alias_writer:  # Requires creating a new file.
+        alias_writer.write("id\tgene_aliases")
 
-            # Write id column.
-            file_writer.write("\n" + file_id + "\t")
+        # Omim file writer.
+        with open(lirical_omims_file, 'x') as omim_writer:  # Requires creating a new file.
+            omim_writer.write("id\tomims")
 
-            # Create/write genes column.
-            with open(lirical_output_dir + file) as input_file:
-                genes = __extract_genes_from_lirical_data(input_file)
-                file_writer.write(','.join(genes))
+            # Process input files.
+            for file in listdir(lirical_output_dir):
+                # Generate ID column.
+                id_column = "\n{}\t".format(file.strip(".tsv").split('/')[-1])
+                alias_writer.write(id_column)
+                omim_writer.write(id_column)
 
-    return lirical_extraction_file
+                # Create/write genes column.
+                with open(lirical_output_dir + file) as input_file:
+                    genes, omims = __extract_fields_from_lirical_data(input_file)
+                    alias_writer.write(','.join(genes))
+                    omim_writer.write(','.join(omims))
+
+    return lirical_gene_alias_file, lirical_omims_file
 
 
-def __extract_genes_from_lirical_data(file_data):
+def __extract_fields_from_lirical_data(file_data):
     genes = []
+    omims = []
     header = True
 
     # Goes through all files (test cases).
@@ -107,36 +118,56 @@ def __extract_genes_from_lirical_data(file_data):
         gene_alias = search(r'\t[\w, ]+; ([\w]+)', line)
         if gene_alias is not None:
             genes.append(gene_alias[1])
+        omims.append(line.split('\t')[2].split(':')[1])
 
-    return genes
+    return genes, omims
 
 
-def __digest_lirical_gene_aliases_file(args, lirical_gene_aliases):
-    # Dict containing {alias:symbol}
-    alias_conversion_dict = retrieve_gene_aliases_dict(args.lirical_data + "Homo_sapiens_gene_info.gz")
+def __convert_lirical_extractions(args, lirical_gene_alias_file, lirical_omims_file):
+    conversion_dir = create_dir(args.output + "lirical_conversion/")
+    converted_gene_alias_file = conversion_dir + "lirical_gene_alias_converted.tsv"
+    converted_omim_intermediate = conversion_dir + "lirical_omim_gene_id.tsv"
+    converted_omim_file = conversion_dir + "lirical_omim_converted.tsv"
+    final_header = "id\tgene_symbol\n"
+
+    # Route 1 to gene symbols.
+    missing = __convert_lirical_output_digest(args, LiricalGeneAliasConverter(args.lirical_data + "Homo_sapiens_gene_info.gz").alias_to_gene_symbol,
+                                              lirical_gene_alias_file, converted_gene_alias_file, final_header)
+    print("Failed to convert these gene aliases to gene symbols: {}\n".format(missing))
+
+    # Route 2 to gene symbols.
+    # omim_converter = LiricalOmimConverter(args.lirical_data + "mim2gene_medgen")
+    missing = __convert_lirical_output_digest(args, LiricalOmimConverter(args.lirical_data + "mim2gene_medgen").omim_to_gene_id,
+                                              lirical_omims_file, converted_omim_intermediate, "id\tgene_id\n")
+    print("Failed to convert these OMIMs to gene IDs: {}\n".format(missing))
+
+    # gene_id_converter = GeneConverter(args.runner_data)
+    missing = __convert_lirical_output_digest(args, GeneConverter(args.runner_data).id_to_symbol,
+                                              converted_omim_intermediate, converted_omim_file, final_header)
+    print("Failed to convert these gene IDs to gene symbols: {}\n".format(missing))
+
+
+def __convert_lirical_output_digest(args, convert_method, input_file, output_file, output_file_header):
     # Set for collecting aliases without a symbol.
     all_missing = set()
 
-    # Prepare output file.
-    lirical_output_gene_symbols = args.output + "lirical_output_gene_symbols.tsv"
-
-    with open(lirical_output_gene_symbols, 'x') as file_writer:  # Requires creating a new file.
+    with open(output_file, 'x') as file_writer:  # Requires creating a new file.
         # Write header.
-        file_writer.write("id\tgene_symbols\n")
+        file_writer.write(output_file_header)
 
         # Process input file.
-        with open(lirical_gene_aliases) as file_reader:
+        with open(input_file) as file_reader:
             for i, line in enumerate(file_reader):
                 # Skip header.
                 if i == 0:
                     continue
 
                 # Process line.
-                line = line.split('\t')
-                converted_genes, missing = convert_gene_aliases_to_symbol(alias_conversion_dict, line[1].split(','))
+                line = line.strip().split('\t')
+                converted, missing = convert_method(line[1].split(','), include_na=True)
 
                 # Digest results.
-                file_writer.write(line[0] + '\t' + ','.join(converted_genes) + '\n')
+                file_writer.write(line[0] + '\t' + ','.join(converted) + '\n')
                 all_missing.update(missing)
 
-    return lirical_output_gene_symbols, missing
+    return missing
