@@ -182,7 +182,7 @@ def __convert_lirical_output_digest(convert_method, input_file, output_file, out
 
                 # Process line.
                 line = line.rstrip().split('\t')
-                converted, missing = convert_method(line[1].split(','), include_na=True)
+                converted, missing = convert_method(line[1].split(','), include_na=False)
 
                 # Digest results.
                 file_writer.write(line[0] + '\t' + ','.join(converted) + '\n')
